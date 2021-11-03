@@ -1,7 +1,21 @@
 variable "project_name" {
-  default = "my-site"
+  description = "Project Name."
+  default     = "my-site"
+  type        = string
 }
 
 variable "region" {
-  default = "ap-northeast-1"
+  description = "Region in which to build the resource."
+  default     = "us-east-1"
+  type        = string
+}
+
+variable "host_zone_id" {
+  description = "HostZone id."
+  type        = string
+}
+
+variable "root_domain" {
+  description = "Root Domain"
+  type        = string
 }
