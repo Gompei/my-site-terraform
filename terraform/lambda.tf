@@ -1,27 +1,34 @@
-//resource "aws_lambda_function" "api" {
-//  function_name = "my-site-api"
-//  role          = aws_iam_role.lambda.arn
-//}
-//
-//data "aws_iam_policy_document" "lambda" {
-//  statement {
-//    actions = ["sts:AssumeRole"]
-//
-//    principals {
-//      type        = "Service"
-//      identifiers = ["lambda.amazonaws.com"]
-//    }
-//    effect = "Allow"
-//  }
-//}
-//resource "aws_iam_role" "lambda" {
-//  name = "my-site-api-role"
-//  assume_role_policy = data.aws_iam_policy_document.lambda.json
-//}
-//
-//resource "aws_lambda_permission" "lambda" {
-//  statement_id  = "AllowAPIGatewayInvoke"
-//  action        = "lambda:InvokeFunction"
-//  function_name = aws_lambda_function.api.function_name
-//  principal     = "apigateway.amazonaws.com"
-//}
+resource "aws_lambda_function" "api" {
+  function_name    = "my-site-api"
+  filename         = "lambda.zip"
+  handler          = "handler"
+  source_code_hash = sha256(filebase64("lambda.zip"))
+  role             = aws_iam_role.lambda.arn
+  runtime          = "go1.x"
+  memory_size      = 128
+  timeout          = 3
+}
+
+data "aws_iam_policy_document" "lambda" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+    effect = "Allow"
+  }
+}
+
+resource "aws_iam_role" "lambda" {
+  name               = "my-site-api-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda.json
+}
+
+resource "aws_lambda_permission" "lambda" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api.function_name
+  principal     = "apigateway.amazonaws.com"
+}

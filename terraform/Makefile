@@ -9,7 +9,7 @@ help: ## 各makeコマンドの説明を表示します
 
 .PHONY: build
 build:
-	GOOS=linux GOARCH=amd64 go build -o main ../example_code/lambda
+	GOOS=linux GOARCH=amd64 go build -o handler ../example_code/lambda
 	zip lambda.zip main
 
 .PHONY: init
