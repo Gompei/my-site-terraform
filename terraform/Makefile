@@ -29,3 +29,6 @@ apply: build ## tf ファイルに記載された情報を元にリソースを�
 destroy: ## tf ファイルに記載された情報を元にリソースを削除します
 	aws s3 rm s3://${S3_BUCKET_NAME} --recursive
 	terraform destroy -var-file .tfvars -auto-approve
+
+api-test:
+	curl https://${API_DOMAIN} --header 'x-api-key:${API_KEY}'
