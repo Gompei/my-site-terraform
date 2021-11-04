@@ -10,7 +10,7 @@ help: ## 各makeコマンドの説明を表示します
 .PHONY: build
 build:
 	GOOS=linux GOARCH=amd64 go build -o handler ../example_code/lambda
-	zip lambda.zip main
+	zip lambda.zip handler
 
 .PHONY: init
 init: ## テラフォームの設定ファイルを含む作業ディレクトリを初期化します
@@ -24,7 +24,7 @@ plan: ## テラフォームによる実行計画を参照します
 apply: build ## tf ファイルに記載された情報を元にリソースを作成します
 	terraform apply -var-file .tfvars -auto-approve
 	aws s3 cp ${PARENT_DIR}/example_code/s3/index.html s3://${S3_BUCKET_NAME}
-	rm -rf main lambda.zip
+	rm -rf handler lambda.zip
 
 .PHONY: destroy
 destroy: ## tf ファイルに記載された情報を元にリソースを削除します
