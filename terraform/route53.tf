@@ -1,4 +1,4 @@
-resource "aws_route53_record" "alb" {
+resource "aws_route53_record" "cloudfront_alias" {
   zone_id = var.host_zone_id
   name    = var.root_domain
   type    = "A"
