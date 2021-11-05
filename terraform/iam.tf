@@ -5,9 +5,9 @@ locals {
 }
 
 resource "aws_iam_openid_connect_provider" "github_actions" {
-  url             = "https://vstoken.actions.githubusercontent.com"
+  url             = "https://token.actions.githubusercontent.com"
   thumbprint_list = ["a031c46782e6e6c662c2c87c76da9aa62ccabd8e"]
-  client_id_list  = ["https://github.com/${local.github_owner}"]
+  client_id_list  = ["sts.amazonaws.com"]
 }
 
 resource "aws_iam_role" "github_actions" {
