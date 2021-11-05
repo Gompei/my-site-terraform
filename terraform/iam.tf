@@ -54,4 +54,10 @@ data "aws_iam_policy_document" "github_actions_2" {
     resources = [aws_lambda_function.api.arn]
     actions   = ["*"]
   }
+
+  statement {
+    effect    = "Allow"
+    resources = [aws_cloudfront_distribution.distribution.arn]
+    actions   = ["*"]
+  }
 }
