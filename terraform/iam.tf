@@ -44,9 +44,12 @@ resource "aws_iam_role_policy" "github_actions" {
 
 data "aws_iam_policy_document" "github_actions_2" {
   statement {
-    effect    = "Allow"
-    resources = [aws_s3_bucket.bucket.arn]
-    actions   = ["*"]
+    effect = "Allow"
+    resources = [
+      aws_s3_bucket.bucket.arn,
+      "${aws_s3_bucket.bucket.arn}/*"
+    ]
+    actions = ["*"]
   }
 
   statement {
