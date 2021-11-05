@@ -19,26 +19,9 @@ resource "aws_iam_role" "api_gateway" {
   assume_role_policy = data.aws_iam_policy_document.api_gateway_1.json
 }
 
-data "aws_iam_policy_document" "api_gateway_2" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams",
-      "logs:PutLogEvents",
-      "logs:GetLogEvents",
-      "logs:FilterLogEvents",
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_role_policy" "api_gateway" {
-  name   = "my-site-api-gateway-policy"
-  role   = aws_iam_role.api_gateway.id
-  policy = data.aws_iam_policy_document.api_gateway_2.json
+resource "aws_iam_role_policy_attachment" "api_gateway_1" {
+  role       = aws_iam_role.api_gateway.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
 }
 
 resource "aws_api_gateway_rest_api" "api" {
@@ -91,15 +74,17 @@ resource "aws_api_gateway_deployment" "api" {
   }
 }
 
-//resource "aws_api_gateway_method_settings" "api" {
-//  method_path = "*/*"
-//  rest_api_id = aws_api_gateway_rest_api.api.id
-//  stage_name  = aws_api_gateway_deployment.api.stage_name
-//  settings {
-//    data_trace_enabled = true
-//    logging_level      = "INFO"
-//  }
-//}
+resource "aws_api_gateway_method_settings" "api" {
+  depends_on = [aws_api_gateway_account.api]
+
+  method_path = "*/*"
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  stage_name  = aws_api_gateway_deployment.api.stage_name
+  settings {
+    data_trace_enabled = true
+    logging_level      = "INFO"
+  }
+}
 
 resource "aws_api_gateway_domain_name" "api" {
   domain_name              = "site-api.${var.root_domain}"
