@@ -104,6 +104,7 @@ resource "aws_api_gateway_deployment" "api" {
 resource "aws_api_gateway_domain_name" "api" {
   domain_name              = "site-api.${var.root_domain}"
   regional_certificate_arn = aws_acm_certificate_validation.certificate.certificate_arn
+  security_policy          = "TLS_1_2"
 
   endpoint_configuration {
     types = ["REGIONAL"]
