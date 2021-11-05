@@ -1,0 +1,8 @@
+{
+    /* VSCode自動保存禁止 */
+    "files.autoSave": "off",
+    /* eslint自動整形 */
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    },
+}
