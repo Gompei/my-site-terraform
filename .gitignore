@@ -6,6 +6,7 @@ handler
 *.tfbackend
 *.env
 *.zip
+dist
 
 ### Terraform ###
 # Local .terraform directories
