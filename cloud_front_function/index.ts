@@ -1,8 +1,33 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-var */
+
 import { CloudFrontRequest } from 'aws-lambda'
 
-function handler (event: CloudFrontRequest):CloudFrontRequest {
+type CloudFrontFunctionRequest = CloudFrontRequest & {
+  request: CloudFrontRequest & {
+    headers: {
+      host: {
+        value: string
+      }
+    }
+  }
+}
+
+type CloudFrontFunctionResult =
+    | {
+  statusCode: number
+  statusDescription?: string
+  headers: {
+    location: {
+      value: string
+    }
+  }
+} | CloudFrontRequest
+
+function handler (event: CloudFrontFunctionRequest):CloudFrontFunctionResult {
   // Extract the URI from the request
-  var newUrl = event.uri
+  var request = event.request
+  var newUrl = event.request.uri
 
   // Not Exists file extensions and last char is not '/''
   if (newUrl.split('.').length == 1 && newUrl.slice(-1) != '/') {
@@ -12,8 +37,5 @@ function handler (event: CloudFrontRequest):CloudFrontRequest {
   // Match any '/' that occurs at the end of a URI. Replace it with a default index
   newUrl = newUrl.replace(/\/$/, '\/index.html')
 
-  // Replace the received URI with the URI that includes the index page
-  event.uri = newUrl
-
-  return event
+  return { ...request, uri: newUrl }
 }
