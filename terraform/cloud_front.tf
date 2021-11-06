@@ -10,10 +10,24 @@ resource "aws_cloudfront_distribution" "distribution" {
     }
   }
 
+  custom_error_response {
+    error_code         = 403
+    response_code      = 404
+    response_page_path = "/index.html"
+  }
+
+  custom_error_response {
+    error_code         = 404
+    response_code      = 404
+    response_page_path = "/index.html"
+  }
+
+
   enabled             = true
   is_ipv6_enabled     = true
   comment             = "my site cloudfront distribution"
   default_root_object = "index.html"
+  http_version        = "http2"
 
   default_cache_behavior {
     allowed_methods        = ["GET", "HEAD"]
@@ -21,14 +35,19 @@ resource "aws_cloudfront_distribution" "distribution" {
     target_origin_id       = aws_s3_bucket.bucket.id
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
+    default_ttl            = 3600  # 1 hour
+    max_ttl                = 86400 # 24 hours
 
     forwarded_values {
       query_string = false
       cookies {
         forward = "none"
       }
+    }
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.function.arn
     }
   }
 
@@ -47,3 +66,11 @@ resource "aws_cloudfront_distribution" "distribution" {
 }
 
 resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {}
+
+resource "aws_cloudfront_function" "function" {
+  name    = "my-site-cloud-front-function"
+  runtime = "cloudfront-js-1.0"
+  comment = "my-site-cloud-front-function"
+  publish = true
+  code    = file("dist/index.js")
+}

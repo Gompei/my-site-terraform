@@ -29,7 +29,8 @@ plan: ## テラフォームによる実行計画を参照します
 .PHONY: apply
 apply: lambda-build function-build ## tf ファイルに記載された情報を元にリソースを作成します
 	terraform apply -var-file .tfvars -auto-approve
-	aws s3 cp ${PARENT_DIR}/example_code/s3/index.html s3://${S3_BUCKET_NAME}
+# 初回のみ
+#aws s3 cp ${PARENT_DIR}/example_code/s3/index.html s3://${S3_BUCKET_NAME}
 
 .PHONY: destroy
 destroy: ## tf ファイルに記載された情報を元にリソースを削除します
