@@ -1,3 +1,4 @@
+# Front
 resource "aws_s3_bucket" "bucket" {
   bucket = var.root_domain
   acl    = "private"
@@ -28,3 +29,18 @@ data "aws_iam_policy_document" "iam_policy" {
     resources = ["${aws_s3_bucket.bucket.arn}/*"]
   }
 }
+
+# lambdaソースアップロード
+resource "aws_s3_bucket_object" "lambda" {
+  bucket = "gompei-lambda-management-bucket-us-east-1"
+  key    = "my-site/lambda.zip"
+  source = "lambda.zip"
+  etag   = filemd5("lambda.zip")
+  lifecycle {
+    ignore_changes = [
+      etag,
+      metadata
+    ]
+  }
+}
+

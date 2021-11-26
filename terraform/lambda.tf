@@ -2,13 +2,19 @@ resource "aws_lambda_function" "api" {
   depends_on = [aws_iam_role_policy_attachment.lambda_1]
 
   function_name    = "my-site-api"
-  filename         = "lambda.zip"
   handler          = "handler"
-  source_code_hash = sha256(filebase64("lambda.zip"))
   role             = aws_iam_role.lambda.arn
+  publish          = true
   runtime          = "go1.x"
   memory_size      = 128
   timeout          = 3
+  s3_bucket        = "gompei-lambda-management-bucket-us-east-1"
+  source_code_hash = aws_s3_bucket_object.lambda.etag
+  lifecycle {
+    ignore_changes = [
+      source_code_hash
+    ]
+  }
 }
 
 data "aws_iam_policy_document" "lambda" {
