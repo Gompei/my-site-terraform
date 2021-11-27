@@ -47,7 +47,9 @@ data "aws_iam_policy_document" "github_actions_2" {
     effect = "Allow"
     resources = [
       aws_s3_bucket.bucket.arn,
-      "${aws_s3_bucket.bucket.arn}/*"
+      "${aws_s3_bucket.bucket.arn}/*",
+      "arn:aws:s3:::gompei-lambda-management-bucket-us-east-1",
+      "arn:aws:s3:::gompei-lambda-management-bucket-us-east-1/*",
     ]
     actions = ["*"]
   }
