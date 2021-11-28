@@ -39,6 +39,29 @@ resource "aws_iam_role_policy_attachment" "lambda_1" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+resource "aws_iam_role_policy" "lambda_2" {
+  name   = "my-site-api-role-dynamo-policy"
+  role   = aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.lambda_2.json
+}
+
+data "aws_iam_policy_document" "lambda_2" {
+  statement {
+    effect = "Allow"
+    resources = [
+      "${aws_dynamodb_table.main.arn}/*"
+    ]
+    actions = [
+      "dynamodb:DeleteItem",
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
+      "dynamodb:UpdateItem",
+    ]
+  }
+}
+
 resource "aws_lambda_permission" "lambda" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
