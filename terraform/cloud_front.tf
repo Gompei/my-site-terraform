@@ -2,10 +2,11 @@ resource "aws_cloudfront_distribution" "distribution" {
   aliases = [var.root_domain]
 
   // api gateway 設定
+  // https://advancedweb.hu/how-to-route-to-multiple-origins-with-cloudfront/
   origin {
     domain_name = replace(aws_api_gateway_deployment.api.invoke_url, "/^https?://([^/]*).*/", "$1")
-    origin_id   = "my-site-api"
-    origin_path = "/api"
+    origin_id   = "api-gw"
+    //origin_path = "/v1/api"
 
     custom_origin_config {
       http_port              = 80
@@ -19,7 +20,7 @@ resource "aws_cloudfront_distribution" "distribution" {
     path_pattern           = "/api/*"
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "my-site-api"
+    target_origin_id       = "api-gw"
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
     default_ttl            = 3600  # 1 hour
@@ -27,6 +28,7 @@ resource "aws_cloudfront_distribution" "distribution" {
 
     forwarded_values {
       query_string = true
+      headers      = ["x-api-key"]
       cookies {
         forward = "all"
       }
@@ -36,7 +38,7 @@ resource "aws_cloudfront_distribution" "distribution" {
   // S3 設定
   origin {
     domain_name = aws_s3_bucket.bucket.bucket_regional_domain_name
-    origin_id   = aws_s3_bucket.bucket.id
+    origin_id   = "s3"
 
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
@@ -56,25 +58,24 @@ resource "aws_cloudfront_distribution" "distribution" {
   }
 
 
-  enabled             = true
-  is_ipv6_enabled     = true
-  comment             = "my site cloudfront distribution"
-  default_root_object = "index.html"
-  http_version        = "http2"
+  enabled         = true
+  is_ipv6_enabled = true
+  comment         = "my site cloudfront distribution"
+  http_version    = "http2"
 
   default_cache_behavior {
-    allowed_methods        = ["GET", "HEAD"]
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = aws_s3_bucket.bucket.id
+    target_origin_id       = "s3"
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
     default_ttl            = 3600  # 1 hour
     max_ttl                = 86400 # 24 hours
 
     forwarded_values {
-      query_string = true
+      query_string = false
       cookies {
-        forward = "all"
+        forward = "none"
       }
     }
 

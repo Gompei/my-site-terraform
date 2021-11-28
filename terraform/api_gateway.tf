@@ -30,8 +30,9 @@ resource "aws_api_gateway_rest_api" "api" {
 }
 
 resource "aws_api_gateway_resource" "api" {
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  path_part   = "api"
+  parent_id = aws_api_gateway_rest_api.api.root_resource_id
+  //path_part   = "api"
+  path_part   = "{proxy+}"
   rest_api_id = aws_api_gateway_rest_api.api.id
 }
 
@@ -41,6 +42,13 @@ resource "aws_api_gateway_method" "api" {
   http_method      = "ANY"
   authorization    = "NONE"
   api_key_required = true
+}
+
+resource "aws_api_gateway_method" "options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.api.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
 }
 
 resource "aws_api_gateway_method_response" "hello_world" {
@@ -54,6 +62,50 @@ resource "aws_api_gateway_method_response" "hello_world" {
   depends_on = [aws_api_gateway_method.api]
 }
 
+resource "aws_api_gateway_method_response" "options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.api.id
+  http_method = aws_api_gateway_method.options.http_method
+  status_code = "200"
+  response_models = {
+    "application/json" = "Empty"
+  }
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.api.id
+  http_method = aws_api_gateway_method.options.http_method
+  status_code = aws_api_gateway_method_response.options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'",
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+resource "aws_api_gateway_integration" "options_mock" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.api.id
+  http_method = aws_api_gateway_method.options.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = <<EOF
+{
+  "statusCode": 200
+}
+EOF
+  }
+}
+
 resource "aws_api_gateway_integration" "api" {
   rest_api_id             = aws_api_gateway_rest_api.api.id
   resource_id             = aws_api_gateway_resource.api.id
@@ -65,10 +117,14 @@ resource "aws_api_gateway_integration" "api" {
 
 resource "aws_api_gateway_deployment" "api" {
   rest_api_id = aws_api_gateway_rest_api.api.id
-  depends_on  = [aws_api_gateway_integration.api]
+  depends_on = [
+    aws_api_gateway_integration.api,
+    aws_api_gateway_integration.options_mock
+  ]
   // 常にデプロイ
   stage_description = "timestamp = ${timestamp()}"
-  stage_name        = "v1"
+  stage_name        = "api"
+  //stage_name        = "v1"
 
   lifecycle {
     create_before_destroy = true
@@ -87,21 +143,21 @@ resource "aws_api_gateway_method_settings" "api" {
   }
 }
 
-resource "aws_api_gateway_domain_name" "api" {
-  domain_name              = "site-api.${var.root_domain}"
-  regional_certificate_arn = aws_acm_certificate_validation.certificate.certificate_arn
-  security_policy          = "TLS_1_2"
+//resource "aws_api_gateway_domain_name" "api" {
+//  domain_name              = "site-api.${var.root_domain}"
+//  regional_certificate_arn = aws_acm_certificate_validation.certificate.certificate_arn
+//  security_policy          = "TLS_1_2"
+//
+//  endpoint_configuration {
+//    types = ["REGIONAL"]
+//  }
+//}
 
-  endpoint_configuration {
-    types = ["REGIONAL"]
-  }
-}
-
-resource "aws_api_gateway_base_path_mapping" "api" {
-  api_id      = aws_api_gateway_rest_api.api.id
-  stage_name  = aws_api_gateway_deployment.api.stage_name
-  domain_name = aws_api_gateway_domain_name.api.domain_name
-}
+//resource "aws_api_gateway_base_path_mapping" "api" {
+//  api_id      = aws_api_gateway_rest_api.api.id
+//  stage_name  = aws_api_gateway_deployment.api.stage_name
+//  domain_name = aws_api_gateway_domain_name.api.domain_name
+//}
 
 resource "aws_api_gateway_api_key" "api" {
   name    = "my-site-api-key"
