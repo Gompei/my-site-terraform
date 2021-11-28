@@ -1,12 +1,12 @@
 resource "aws_dynamodb_table" "main" {
-  name           = "my-site-table"
+  name           = "article_table"
   billing_mode   = "PROVISIONED"
   read_capacity  = 5
   write_capacity = 5
-  hash_key       = "article_id"
+  hash_key       = "id"
 
   attribute {
-    name = "article_id"
+    name = "id"
     type = "N"
   }
 }
