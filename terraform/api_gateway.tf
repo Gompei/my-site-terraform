@@ -143,22 +143,6 @@ resource "aws_api_gateway_method_settings" "api" {
   }
 }
 
-//resource "aws_api_gateway_domain_name" "api" {
-//  domain_name              = "site-api.${var.root_domain}"
-//  regional_certificate_arn = aws_acm_certificate_validation.certificate.certificate_arn
-//  security_policy          = "TLS_1_2"
-//
-//  endpoint_configuration {
-//    types = ["REGIONAL"]
-//  }
-//}
-
-//resource "aws_api_gateway_base_path_mapping" "api" {
-//  api_id      = aws_api_gateway_rest_api.api.id
-//  stage_name  = aws_api_gateway_deployment.api.stage_name
-//  domain_name = aws_api_gateway_domain_name.api.domain_name
-//}
-
 resource "aws_api_gateway_api_key" "api" {
   name    = "my-site-api-key"
   enabled = true
