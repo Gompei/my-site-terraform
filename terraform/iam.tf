@@ -48,8 +48,8 @@ data "aws_iam_policy_document" "github_actions_2" {
     resources = [
       aws_s3_bucket.s3_bucket.arn,
       "${aws_s3_bucket.s3_bucket.arn}/*",
-      "arn:aws:s3:::gompei-lambda-management-bucket-us-east-1",
-      "arn:aws:s3:::gompei-lambda-management-bucket-us-east-1/*"
+      data.terraform_remote_state.my-aws-settings.outputs.lambda_bucket_ap-northeast-1.arn,
+      "${data.terraform_remote_state.my-aws-settings.outputs.lambda_bucket_ap-northeast-1.arn}/*"
     ]
     actions = ["*"]
   }
