@@ -131,12 +131,12 @@ resource "aws_api_gateway_method_response" "each_response" {
 }
 
 // 認証設定
-//resource "aws_api_gateway_authorizer" "authorizer" {
-//  name          = "my-site-cognito-authorizer"
-//  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
-//  type          = "COGNITO_USER_POOLS"
-//  provider_arns = [aws_cognito_user_pool.user_pool.arn]
-//}
+resource "aws_api_gateway_authorizer" "authorizer" {
+  name          = "my-site-cognito-authorizer"
+  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  type          = "COGNITO_USER_POOLS"
+  provider_arns = [aws_cognito_user_pool.user_pool.arn]
+}
 
 // Cloud Watch設定
 resource "aws_api_gateway_account" "account" {

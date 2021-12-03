@@ -1,4 +1,10 @@
 resource "aws_cloudfront_distribution" "distribution" {
+  lifecycle {
+    ignore_changes = [
+      origin,
+    ]
+  }
+
   aliases = [data.terraform_remote_state.my-aws-settings.outputs.my_domain_zone.name]
 
   // api gateway 設定
@@ -13,7 +19,6 @@ resource "aws_cloudfront_distribution" "distribution" {
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
-
   ordered_cache_behavior {
     path_pattern           = "/api/*"
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
