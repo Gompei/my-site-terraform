@@ -39,4 +39,4 @@ destroy: ## tf ファイルに記載された情報を元にリソースを削�
 	terraform destroy -var-file .tfvars -auto-approve
 
 api-test:
-	curl https://${API_DOMAIN}/api --header 'x-api-key: ${API_KEY}'
+	curl https://${API_DOMAIN}/api/test --header 'x-api-key: ${API_KEY}'
