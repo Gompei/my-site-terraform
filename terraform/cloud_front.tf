@@ -2,36 +2,36 @@ resource "aws_cloudfront_distribution" "distribution" {
   aliases = [data.terraform_remote_state.my-aws-settings.outputs.my_domain_zone.name]
 
   // api gateway 設定
-  //  origin {
-  //    domain_name = replace(aws_api_gateway_deployment..invoke_url, "/^https?://([^/]*).*/", "$1")
-  //    origin_id   = "api-gw"
-  //
-  //    custom_origin_config {
-  //      http_port              = 80
-  //      https_port             = 443
-  //      origin_protocol_policy = "https-only"
-  //      origin_ssl_protocols   = ["TLSv1.2"]
-  //    }
-  //  }
-  //
-  //  ordered_cache_behavior {
-  //    path_pattern           = "/api/*"
-  //    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-  //    cached_methods         = ["GET", "HEAD"]
-  //    target_origin_id       = "api-gw"
-  //    viewer_protocol_policy = "redirect-to-https"
-  //    min_ttl                = 0
-  //    default_ttl            = 3600  # 1 hour
-  //    max_ttl                = 86400 # 24 hours
-  //
-  //    forwarded_values {
-  //      query_string = true
-  //      headers      = ["x-api-key"]
-  //      cookies {
-  //        forward = "all"
-  //      }
-  //    }
-  //  }
+  origin {
+    domain_name = replace(aws_api_gateway_deployment.deployment.invoke_url, "/^https?://([^/]*).*/", "$1")
+    origin_id   = "api-gw"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  ordered_cache_behavior {
+    path_pattern           = "/api/*"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "api-gw"
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 3600  # 1 hour
+    max_ttl                = 86400 # 24 hours
+
+    forwarded_values {
+      query_string = true
+      headers      = ["x-api-key"]
+      cookies {
+        forward = "all"
+      }
+    }
+  }
 
   // S3 設定
   origin {
@@ -77,10 +77,10 @@ resource "aws_cloudfront_distribution" "distribution" {
       }
     }
 
-    //    function_association {
-    //      event_type   = "viewer-request"
-    //      function_arn = aws_cloudfront_function.function.arn
-    //    }
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.function.arn
+    }
   }
 
   restrictions {
@@ -99,10 +99,10 @@ resource "aws_cloudfront_distribution" "distribution" {
 
 resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {}
 
-//resource "aws_cloudfront_function" "function" {
-//  name    = "my-site-cloud-front-function"
-//  runtime = "cloudfront-js-1.0"
-//  comment = "my-site-cloud-front-function"
-//  publish = true
-//  code    = file("dist/index.js")
-//}
+resource "aws_cloudfront_function" "function" {
+  name    = "my-site-cloud-front-function"
+  runtime = "cloudfront-js-1.0"
+  comment = "my-site-cloud-front-function"
+  publish = true
+  code    = file("dist/index.js")
+}

@@ -40,21 +40,21 @@ resource "aws_iam_role_policy_attachment" "lambda_1" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-//resource "aws_iam_role_policy" "lambda_2" {
-//  name   = "my-site-api-role-dynamo-policy"
-//  role   = aws_iam_role.lambda.id
-//  policy = data.aws_iam_policy_document.lambda_2.json
-//}
+resource "aws_iam_role_policy" "lambda_2" {
+  name   = "my-site-api-role-dynamo-policy"
+  role   = aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.lambda_2.json
+}
 
-//data "aws_iam_policy_document" "lambda_2" {
-//  statement {
-//    effect = "Allow"
-//    resources = [
-//      //aws_dynamodb_table.main.arn,
-//    ]
-//    actions = ["*"]
-//  }
-//}
+data "aws_iam_policy_document" "lambda_2" {
+  statement {
+    effect = "Allow"
+    resources = [
+      aws_dynamodb_table.dynamodb_table.arn,
+    ]
+    actions = ["*"]
+  }
+}
 
 // lambda呼び出し権限設定
 resource "aws_lambda_permission" "test_path" {
