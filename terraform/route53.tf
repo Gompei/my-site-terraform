@@ -1,6 +1,6 @@
 resource "aws_route53_record" "cloudfront_alias" {
-  zone_id = var.host_zone_id
-  name    = var.root_domain
+  zone_id = data.terraform_remote_state.my-aws-settings.outputs.my_domain_zone.zone_id
+  name    = data.terraform_remote_state.my-aws-settings.outputs.my_domain_zone.name
   type    = "A"
 
   alias {
