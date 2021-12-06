@@ -26,6 +26,33 @@ data "aws_iam_policy_document" "iam_policy" {
   }
 }
 
+// 画像用バケット
+resource "aws_s3_bucket" "s3_bucket_image" {
+  bucket = "my-site-image-bucket"
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_policy" "bucket_image_policy" {
+  bucket = aws_s3_bucket.s3_bucket_image.id
+  policy = data.aws_iam_policy_document.iam_policy_2.json
+}
+
+// TODO:リファクタリング予定
+// TODO:命名規則決める
+// TODO: CloudFront噛ませる必要があるか検討
+data "aws_iam_policy_document" "iam_policy_2" {
+  statement {
+    sid    = "Allow CloudFront"
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = [aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn]
+    }
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.s3_bucket_image.arn}/*"]
+  }
+}
+
 // lambdaソースアップロード
 resource "aws_s3_bucket_object" "lambda" {
   bucket = data.terraform_remote_state.my-aws-settings.outputs.lambda_bucket_ap-northeast-1.bucket
