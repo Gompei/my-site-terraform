@@ -64,7 +64,7 @@ resource "aws_cloudfront_distribution" "distribution" {
   is_ipv6_enabled = true
   comment         = "my site cloudfront distribution"
   http_version    = "http2"
-  //web_acl_id      = aws_wafv2_web_acl.main.arn
+  web_acl_id      = aws_wafv2_web_acl.main.arn
 
   default_cache_behavior {
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
