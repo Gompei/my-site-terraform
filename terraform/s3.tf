@@ -30,6 +30,19 @@ data "aws_iam_policy_document" "iam_policy" {
 resource "aws_s3_bucket" "s3_bucket_image" {
   bucket = "my-site-image-bucket"
   acl    = "private"
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = [
+      "HEAD",
+      "GET",
+      "PUT",
+      "POST",
+      "DELETE"
+    ]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag"]
+  }
 }
 
 resource "aws_s3_bucket_policy" "bucket_image_policy" {
