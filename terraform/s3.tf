@@ -30,19 +30,6 @@ data "aws_iam_policy_document" "iam_policy" {
 resource "aws_s3_bucket" "s3_bucket_image" {
   bucket = "my-site-image-bucket"
   acl    = "private"
-
-  cors_rule {
-    allowed_headers = ["*"]
-    allowed_methods = [
-      "HEAD",
-      "GET",
-      "PUT",
-      "POST",
-      "DELETE"
-    ]
-    allowed_origins = ["*"]
-    expose_headers  = ["ETag"]
-  }
 }
 
 resource "aws_s3_bucket_policy" "bucket_image_policy" {
@@ -50,9 +37,6 @@ resource "aws_s3_bucket_policy" "bucket_image_policy" {
   policy = data.aws_iam_policy_document.iam_policy_2.json
 }
 
-// TODO:リファクタリング予定
-// TODO:命名規則決める
-// TODO: CloudFront噛ませる必要があるか検討
 data "aws_iam_policy_document" "iam_policy_2" {
   statement {
     sid    = "Allow CloudFront"
@@ -65,24 +49,6 @@ data "aws_iam_policy_document" "iam_policy_2" {
     }
     actions   = ["s3:GetObject"]
     resources = ["${aws_s3_bucket.s3_bucket_image.arn}/*"]
-  }
-  statement {
-    sid     = "Allow S3 upload"
-    effect  = "Allow"
-    actions = ["s3:PutObject"]
-    // TODO: おかしい気がする
-    principals {
-      identifiers = ["*"]
-      type        = "AWS"
-    }
-    resources = ["${aws_s3_bucket.s3_bucket_image.arn}/*"]
-    condition {
-      test = "ArnEquals"
-      values = [
-        aws_s3_bucket.s3_bucket.arn
-      ]
-      variable = "aws:SourceArn"
-    }
   }
 }
 
