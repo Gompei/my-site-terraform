@@ -39,12 +39,39 @@ resource "aws_cloudfront_distribution" "distribution" {
   }
 
   // S3 設定
+  // 静的ホスティング用
   origin {
     domain_name = aws_s3_bucket.s3_bucket.bucket_regional_domain_name
     origin_id   = "s3"
 
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
+    }
+  }
+  // 画像格納用バケット
+  origin {
+    domain_name = aws_s3_bucket.s3_bucket_image.bucket_regional_domain_name
+    origin_id   = "s3-image"
+
+    s3_origin_config {
+      origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
+    }
+  }
+  ordered_cache_behavior {
+    path_pattern           = "/image/*"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "s3-image"
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 3600  # 1 hour
+    max_ttl                = 86400 # 24 hours
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
     }
   }
 
