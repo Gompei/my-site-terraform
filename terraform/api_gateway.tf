@@ -22,7 +22,14 @@ resource "aws_api_gateway_resource" "first_path" {
   path_part   = each.value
 }
 
-// HTTPメソッド作成
+// メソッド作成
+resource "aws_api_gateway_method" "article_put" {
+  rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  resource_id      = aws_api_gateway_resource.root_path["article"].id
+  http_method      = "PUT"
+  authorization    = "NONE"
+  api_key_required = true
+}
 resource "aws_api_gateway_method" "test_get" {
   rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id      = aws_api_gateway_resource.root_path["test"].id
@@ -49,11 +56,10 @@ resource "aws_api_gateway_method" "article_get" {
     "method.request.path.articleID" = true
   }
 }
-resource "aws_api_gateway_method" "article" {
-  for_each      = toset(["POST", "PUT", "DELETE"])
+resource "aws_api_gateway_method" "article_delete" {
   rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id   = aws_api_gateway_resource.first_path["{articleID}"].id
-  http_method   = each.value
+  http_method   = "DELETE"
   authorization = "NONE"
   //authorization    = "COGNITO_USER_POOLS"
   //authorizer_id    = aws_api_gateway_authorizer.authorizer.id
@@ -65,6 +71,16 @@ resource "aws_api_gateway_method" "article" {
 }
 
 // 統合タイプ設定
+resource "aws_api_gateway_integration" "article_put" {
+  depends_on = [aws_api_gateway_method.article_put]
+
+  rest_api_id             = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  resource_id             = aws_api_gateway_resource.root_path["article"].id
+  http_method             = "PUT"
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.api.invoke_arn
+}
 resource "aws_api_gateway_integration" "test_get" {
   depends_on = [aws_api_gateway_method.test_get]
 
@@ -88,11 +104,11 @@ resource "aws_api_gateway_integration" "each_get" {
 }
 resource "aws_api_gateway_integration" "article_any" {
   depends_on = [
-    aws_api_gateway_method.article,
+    aws_api_gateway_method.article_delete,
     aws_api_gateway_method.article_get
   ]
 
-  for_each                = toset(["GET", "POST", "PUT", "DELETE"])
+  for_each                = toset(["GET", "DELETE"])
   rest_api_id             = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id             = aws_api_gateway_resource.first_path["{articleID}"].id
   http_method             = each.value
@@ -131,12 +147,12 @@ resource "aws_api_gateway_method_response" "each_response" {
 }
 
 // 認証設定
-resource "aws_api_gateway_authorizer" "authorizer" {
-  name          = "my-site-cognito-authorizer"
-  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  type          = "COGNITO_USER_POOLS"
-  provider_arns = [aws_cognito_user_pool.user_pool.arn]
-}
+//resource "aws_api_gateway_authorizer" "authorizer" {
+//  name          = "my-site-cognito-authorizer"
+//  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
+//  type          = "COGNITO_USER_POOLS"
+//  provider_arns = [aws_cognito_user_pool.user_pool.arn]
+//}
 
 // Cloud Watch設定
 resource "aws_api_gateway_account" "account" {
