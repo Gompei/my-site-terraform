@@ -10,7 +10,7 @@ resource "aws_cloudfront_distribution" "distribution" {
   // api gateway 設定
   origin {
     domain_name = replace(aws_api_gateway_deployment.deployment.invoke_url, "/^https?://([^/]*).*/", "$1")
-    origin_id   = "api-gw"
+    origin_id   = "api-gateway"
 
     custom_origin_config {
       http_port              = 80
@@ -23,7 +23,7 @@ resource "aws_cloudfront_distribution" "distribution" {
     path_pattern           = "/api/*"
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "api-gw"
+    target_origin_id       = "api-gateway"
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
     default_ttl            = 3600  # 1 hour
@@ -38,16 +38,6 @@ resource "aws_cloudfront_distribution" "distribution" {
     }
   }
 
-  // S3 設定
-  // 静的ホスティング用
-  origin {
-    domain_name = aws_s3_bucket.s3_bucket.bucket_regional_domain_name
-    origin_id   = "s3"
-
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
-    }
-  }
   // 画像格納用バケット
   origin {
     domain_name = aws_s3_bucket.s3_bucket_image.bucket_regional_domain_name
@@ -75,6 +65,16 @@ resource "aws_cloudfront_distribution" "distribution" {
     }
   }
 
+  // 静的ホスティング用
+  origin {
+    domain_name = aws_s3_bucket.s3_bucket.bucket_regional_domain_name
+    origin_id   = "s3-hosting"
+
+    s3_origin_config {
+      origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
+    }
+  }
+
   custom_error_response {
     error_code         = 403
     response_code      = 403
@@ -96,7 +96,7 @@ resource "aws_cloudfront_distribution" "distribution" {
   default_cache_behavior {
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "s3"
+    target_origin_id       = "s3-hosting"
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
     default_ttl            = 3600  # 1 hour
