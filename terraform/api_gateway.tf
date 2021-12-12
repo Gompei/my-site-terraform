@@ -4,6 +4,38 @@ resource "aws_api_gateway_rest_api" "api_gateway_rest_api" {
   description = "my-site-api-gateway-rest"
 }
 
+// 認証設定
+//resource "aws_api_gateway_authorizer" "authorizer" {
+//  name          = "my-site-cognito-authorizer"
+//  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
+//  type          = "COGNITO_USER_POOLS"
+//  provider_arns = [aws_cognito_user_pool.user_pool.arn]
+//}
+
+// Cloud Watch設定
+resource "aws_api_gateway_account" "account" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway.arn
+}
+data "aws_iam_policy_document" "api_gateway" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["apigateway.amazonaws.com"]
+    }
+    effect = "Allow"
+  }
+}
+resource "aws_iam_role" "api_gateway" {
+  name               = "my-site-api-gateway-role"
+  assume_role_policy = data.aws_iam_policy_document.api_gateway.json
+}
+resource "aws_iam_role_policy_attachment" "api_gateway" {
+  role       = aws_iam_role.api_gateway.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
 // リソース作成(APIパス)
 locals {
   root_path  = ["test", "article"]
@@ -61,6 +93,7 @@ resource "aws_api_gateway_method" "article_delete" {
   resource_id   = aws_api_gateway_resource.first_path["{articleID}"].id
   http_method   = "DELETE"
   authorization = "NONE"
+  // TODO
   //authorization    = "COGNITO_USER_POOLS"
   //authorizer_id    = aws_api_gateway_authorizer.authorizer.id
   api_key_required = true
@@ -115,13 +148,28 @@ resource "aws_api_gateway_integration" "article_any" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.api.invoke_arn
-
   request_parameters = {
     "integration.request.path.id" = "method.request.path.articleID"
   }
 }
 
 // レスポンス設定
+resource "aws_api_gateway_method_response" "article_put_response" {
+  depends_on = [aws_api_gateway_method.article_put]
+
+  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  resource_id = aws_api_gateway_resource.root_path["article"].id
+  http_method = "PUT"
+  status_code = "200"
+  response_models = {
+    "application/json" = "Empty"
+  }
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
 resource "aws_api_gateway_method_response" "test_response" {
   depends_on = [aws_api_gateway_method.test_get]
 
@@ -131,6 +179,11 @@ resource "aws_api_gateway_method_response" "test_response" {
   status_code = "200"
   response_models = {
     "application/json" = "Empty"
+  }
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin"  = true
   }
 }
 resource "aws_api_gateway_method_response" "each_response" {
@@ -144,52 +197,34 @@ resource "aws_api_gateway_method_response" "each_response" {
   response_models = {
     "application/json" = "Empty"
   }
-}
-
-// 認証設定
-//resource "aws_api_gateway_authorizer" "authorizer" {
-//  name          = "my-site-cognito-authorizer"
-//  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
-//  type          = "COGNITO_USER_POOLS"
-//  provider_arns = [aws_cognito_user_pool.user_pool.arn]
-//}
-
-// Cloud Watch設定
-resource "aws_api_gateway_account" "account" {
-  cloudwatch_role_arn = aws_iam_role.api_gateway.arn
-}
-data "aws_iam_policy_document" "api_gateway" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["apigateway.amazonaws.com"]
-    }
-    effect = "Allow"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin"  = true
   }
 }
-resource "aws_iam_role" "api_gateway" {
-  name               = "my-site-api-gateway-role"
-  assume_role_policy = data.aws_iam_policy_document.api_gateway.json
-}
-resource "aws_iam_role_policy_attachment" "api_gateway" {
-  role       = aws_iam_role.api_gateway.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
-}
-resource "aws_api_gateway_method_settings" "method_settings" {
-  depends_on = [aws_api_gateway_account.account]
+resource "aws_api_gateway_method_response" "article_any_response" {
+  depends_on = [
+    aws_api_gateway_method.article_delete,
+    aws_api_gateway_method.article_get
+  ]
 
-  method_path = "*/*"
+  for_each    = toset(["GET", "DELETE"])
   rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  stage_name  = aws_api_gateway_deployment.deployment.stage_name
-  settings {
-    data_trace_enabled = true
-    logging_level      = "INFO"
+  resource_id = aws_api_gateway_resource.first_path["{articleID}"].id
+  http_method = each.value
+  status_code = "200"
+  response_models = {
+    "application/json" = "Empty"
+  }
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin"  = true
   }
 }
 
-// CORS設定
+// CORS設定(TODO:下の階層も有効化いるのか?)
 resource "aws_api_gateway_method" "options" {
   for_each      = toset(local.root_path)
   rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
@@ -206,7 +241,6 @@ resource "aws_api_gateway_method_response" "options" {
   response_models = {
     "application/json" = "Empty"
   }
-
   response_parameters = {
     "method.response.header.Access-Control-Allow-Headers" = true,
     "method.response.header.Access-Control-Allow-Methods" = true,
@@ -257,6 +291,17 @@ resource "aws_api_gateway_deployment" "deployment" {
 
   lifecycle {
     create_before_destroy = true
+  }
+}
+resource "aws_api_gateway_method_settings" "method_settings" {
+  depends_on = [aws_api_gateway_account.account]
+
+  method_path = "*/*"
+  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  stage_name  = aws_api_gateway_deployment.deployment.stage_name
+  settings {
+    data_trace_enabled = true
+    logging_level      = "INFO"
   }
 }
 
