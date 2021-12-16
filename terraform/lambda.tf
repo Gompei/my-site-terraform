@@ -81,7 +81,7 @@ resource "aws_lambda_permission" "each_path" {
   source_arn    = "${aws_api_gateway_rest_api.api_gateway_rest_api.execution_arn}/*/GET/${aws_api_gateway_resource.root_path["article"].path_part}/${aws_api_gateway_resource.first_path[each.value].path_part}"
 }
 resource "aws_lambda_permission" "article_path" {
-  for_each      = toset(["GET", "DELETE"])
+  for_each      = toset(["GET"])
   statement_id  = "allow-api-gateway-${each.value}-article-path"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.api.function_name

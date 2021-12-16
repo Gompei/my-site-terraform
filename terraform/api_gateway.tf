@@ -4,14 +4,6 @@ resource "aws_api_gateway_rest_api" "api_gateway_rest_api" {
   description = "my-site-api-gateway-rest"
 }
 
-// 認証設定
-//resource "aws_api_gateway_authorizer" "authorizer" {
-//  name          = "my-site-cognito-authorizer"
-//  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
-//  type          = "COGNITO_USER_POOLS"
-//  provider_arns = [aws_cognito_user_pool.user_pool.arn]
-//}
-
 // Cloud Watch設定
 resource "aws_api_gateway_account" "account" {
   cloudwatch_role_arn = aws_iam_role.api_gateway.arn
@@ -88,20 +80,6 @@ resource "aws_api_gateway_method" "article_get" {
     "method.request.path.articleID" = true
   }
 }
-resource "aws_api_gateway_method" "article_delete" {
-  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id   = aws_api_gateway_resource.first_path["{articleID}"].id
-  http_method   = "DELETE"
-  authorization = "NONE"
-  // TODO
-  //authorization    = "COGNITO_USER_POOLS"
-  //authorizer_id    = aws_api_gateway_authorizer.authorizer.id
-  api_key_required = true
-
-  request_parameters = {
-    "method.request.path.articleID" = true
-  }
-}
 
 // 統合タイプ設定
 resource "aws_api_gateway_integration" "article_put" {
@@ -137,11 +115,10 @@ resource "aws_api_gateway_integration" "each_get" {
 }
 resource "aws_api_gateway_integration" "article_any" {
   depends_on = [
-    aws_api_gateway_method.article_delete,
     aws_api_gateway_method.article_get
   ]
 
-  for_each                = toset(["GET", "DELETE"])
+  for_each                = toset(["GET"])
   rest_api_id             = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id             = aws_api_gateway_resource.first_path["{articleID}"].id
   http_method             = each.value
@@ -205,11 +182,10 @@ resource "aws_api_gateway_method_response" "each_response" {
 }
 resource "aws_api_gateway_method_response" "article_any_response" {
   depends_on = [
-    aws_api_gateway_method.article_delete,
     aws_api_gateway_method.article_get
   ]
 
-  for_each    = toset(["GET", "DELETE"])
+  for_each    = toset(["GET"])
   rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id = aws_api_gateway_resource.first_path["{articleID}"].id
   http_method = each.value
@@ -224,7 +200,7 @@ resource "aws_api_gateway_method_response" "article_any_response" {
   }
 }
 
-// CORS設定(TODO:下の階層も有効化いるのか?)
+// CORS設定
 resource "aws_api_gateway_method" "options" {
   for_each      = toset(local.root_path)
   rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
