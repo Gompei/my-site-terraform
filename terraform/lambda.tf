@@ -51,7 +51,6 @@ data "aws_iam_policy_document" "lambda_2" {
     effect = "Allow"
     resources = [
       aws_dynamodb_table.dynamodb_table.arn,
-      aws_dynamodb_table.dynamodb_count_table.arn
     ]
     actions = ["*"]
   }
