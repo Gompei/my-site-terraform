@@ -64,13 +64,6 @@ resource "aws_lambda_permission" "put_article_path" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api_gateway_rest_api.execution_arn}/*/PUT/${aws_api_gateway_resource.root_path["article"].path_part}"
 }
-resource "aws_lambda_permission" "test_path" {
-  statement_id  = "allow-api-gateway-test-path"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.api.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.api_gateway_rest_api.execution_arn}/*/GET/${aws_api_gateway_resource.root_path["test"].path_part}"
-}
 resource "aws_lambda_permission" "each_path" {
   for_each      = toset(["list"])
   statement_id  = "allow-api-gateway-${each.value}-path"

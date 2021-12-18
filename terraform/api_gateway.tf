@@ -30,8 +30,8 @@ resource "aws_iam_role_policy_attachment" "api_gateway" {
 
 // リソース作成(APIパス)
 locals {
-  root_path  = ["test", "article"]
-  first_path = ["{articleID}", "search", "list"]
+  root_path  = ["article"]
+  first_path = ["{articleID}", "list"]
 }
 resource "aws_api_gateway_resource" "root_path" {
   for_each    = toset(local.root_path)
@@ -51,13 +51,6 @@ resource "aws_api_gateway_method" "article_put" {
   rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id      = aws_api_gateway_resource.root_path["article"].id
   http_method      = "PUT"
-  authorization    = "NONE"
-  api_key_required = true
-}
-resource "aws_api_gateway_method" "test_get" {
-  rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id      = aws_api_gateway_resource.root_path["test"].id
-  http_method      = "GET"
   authorization    = "NONE"
   api_key_required = true
 }
@@ -88,16 +81,6 @@ resource "aws_api_gateway_integration" "article_put" {
   rest_api_id             = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id             = aws_api_gateway_resource.root_path["article"].id
   http_method             = "PUT"
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.api.invoke_arn
-}
-resource "aws_api_gateway_integration" "test_get" {
-  depends_on = [aws_api_gateway_method.test_get]
-
-  rest_api_id             = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id             = aws_api_gateway_resource.root_path["test"].id
-  http_method             = "GET"
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.api.invoke_arn
@@ -137,22 +120,6 @@ resource "aws_api_gateway_method_response" "article_put_response" {
   rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id = aws_api_gateway_resource.root_path["article"].id
   http_method = "PUT"
-  status_code = "200"
-  response_models = {
-    "application/json" = "Empty"
-  }
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true,
-    "method.response.header.Access-Control-Allow-Methods" = true,
-    "method.response.header.Access-Control-Allow-Origin"  = true
-  }
-}
-resource "aws_api_gateway_method_response" "test_response" {
-  depends_on = [aws_api_gateway_method.test_get]
-
-  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id = aws_api_gateway_resource.root_path["test"].id
-  http_method = "GET"
   status_code = "200"
   response_models = {
     "application/json" = "Empty"
@@ -306,7 +273,6 @@ EOF
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
   depends_on = [
-    aws_api_gateway_integration.test_get,
     aws_api_gateway_integration.each_get,
     aws_api_gateway_integration.article_any,
     aws_api_gateway_integration.options_mock
