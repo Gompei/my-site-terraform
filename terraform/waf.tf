@@ -15,7 +15,7 @@ resource "aws_wafv2_web_acl" "main" {
   }
 
   rule {
-    name     = "rule-1"
+    name     = "my-site-waf-rate-based-rule"
     priority = 1
 
     action {
