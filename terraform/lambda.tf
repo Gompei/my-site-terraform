@@ -57,13 +57,6 @@ data "aws_iam_policy_document" "lambda_2" {
 }
 
 // lambda呼び出し権限設定
-resource "aws_lambda_permission" "put_article_path" {
-  statement_id  = "allow-api-gateway-put-article-path"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.api.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.api_gateway_rest_api.execution_arn}/*/PUT/${aws_api_gateway_resource.root_path["article"].path_part}"
-}
 resource "aws_lambda_permission" "each_path" {
   for_each      = toset(["list"])
   statement_id  = "allow-api-gateway-${each.value}-path"

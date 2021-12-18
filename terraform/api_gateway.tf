@@ -47,13 +47,6 @@ resource "aws_api_gateway_resource" "first_path" {
 }
 
 // メソッド作成
-resource "aws_api_gateway_method" "article_put" {
-  rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id      = aws_api_gateway_resource.root_path["article"].id
-  http_method      = "PUT"
-  authorization    = "NONE"
-  api_key_required = true
-}
 resource "aws_api_gateway_method" "each_get" {
   for_each         = toset(["list"])
   rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
@@ -75,16 +68,6 @@ resource "aws_api_gateway_method" "article_get" {
 }
 
 // 統合タイプ設定
-resource "aws_api_gateway_integration" "article_put" {
-  depends_on = [aws_api_gateway_method.article_put]
-
-  rest_api_id             = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id             = aws_api_gateway_resource.root_path["article"].id
-  http_method             = "PUT"
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.api.invoke_arn
-}
 resource "aws_api_gateway_integration" "each_get" {
   depends_on = [aws_api_gateway_method.each_get]
 
@@ -114,22 +97,6 @@ resource "aws_api_gateway_integration" "article_any" {
 }
 
 // レスポンス設定
-resource "aws_api_gateway_method_response" "article_put_response" {
-  depends_on = [aws_api_gateway_method.article_put]
-
-  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id = aws_api_gateway_resource.root_path["article"].id
-  http_method = "PUT"
-  status_code = "200"
-  response_models = {
-    "application/json" = "Empty"
-  }
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true,
-    "method.response.header.Access-Control-Allow-Methods" = true,
-    "method.response.header.Access-Control-Allow-Origin"  = true
-  }
-}
 resource "aws_api_gateway_method_response" "each_response" {
   depends_on = [aws_api_gateway_method.each_get]
 
@@ -168,34 +135,12 @@ resource "aws_api_gateway_method_response" "article_any_response" {
 }
 
 // CORS設定
-resource "aws_api_gateway_method" "options" {
-  for_each      = toset(local.root_path)
-  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id   = aws_api_gateway_resource.root_path[each.value].id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
-}
 resource "aws_api_gateway_method" "options_first_path" {
   for_each      = toset(local.first_path)
   rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id   = aws_api_gateway_resource.first_path[each.value].id
   http_method   = "OPTIONS"
   authorization = "NONE"
-}
-resource "aws_api_gateway_method_response" "options" {
-  for_each    = toset(local.root_path)
-  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id = aws_api_gateway_resource.root_path[each.value].id
-  http_method = aws_api_gateway_method.options[each.value].http_method
-  status_code = "200"
-  response_models = {
-    "application/json" = "Empty"
-  }
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true,
-    "method.response.header.Access-Control-Allow-Methods" = true,
-    "method.response.header.Access-Control-Allow-Origin"  = true
-  }
 }
 resource "aws_api_gateway_method_response" "options_first_path" {
   for_each    = toset(local.first_path)
@@ -212,19 +157,6 @@ resource "aws_api_gateway_method_response" "options_first_path" {
     "method.response.header.Access-Control-Allow-Origin"  = true
   }
 }
-resource "aws_api_gateway_integration_response" "options" {
-  for_each    = toset(local.root_path)
-  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id = aws_api_gateway_resource.root_path[each.value].id
-  http_method = aws_api_gateway_method.options[each.value].http_method
-  status_code = aws_api_gateway_method_response.options[each.value].status_code
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'",
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
-  }
-}
 resource "aws_api_gateway_integration_response" "options_first_path" {
   for_each    = toset(local.first_path)
   rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
@@ -236,21 +168,6 @@ resource "aws_api_gateway_integration_response" "options_first_path" {
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
     "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'",
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
-  }
-}
-resource "aws_api_gateway_integration" "options_mock" {
-  for_each    = toset(local.root_path)
-  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id = aws_api_gateway_resource.root_path[each.value].id
-  http_method = aws_api_gateway_method.options[each.value].http_method
-  type        = "MOCK"
-
-  request_templates = {
-    "application/json" = <<EOF
-{
-  "statusCode": 200
-}
-EOF
   }
 }
 resource "aws_api_gateway_integration" "options_mock_first_path" {
@@ -275,7 +192,6 @@ resource "aws_api_gateway_deployment" "deployment" {
   depends_on = [
     aws_api_gateway_integration.each_get,
     aws_api_gateway_integration.article_any,
-    aws_api_gateway_integration.options_mock
   ]
   // 常にデプロイ
   stage_description = "timestamp = ${timestamp()}"
