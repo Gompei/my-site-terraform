@@ -21,7 +21,7 @@ resource "aws_cloudfront_distribution" "distribution" {
   }
   ordered_cache_behavior {
     path_pattern           = "/api/*"
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "api-gateway"
     viewer_protocol_policy = "redirect-to-https"
@@ -96,7 +96,7 @@ resource "aws_cloudfront_distribution" "distribution" {
   web_acl_id      = aws_wafv2_web_acl.main.arn
 
   default_cache_behavior {
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "s3-hosting"
     viewer_protocol_policy = "redirect-to-https"
