@@ -26,8 +26,9 @@ resource "aws_cloudfront_distribution" "distribution" {
     target_origin_id       = "api-gateway"
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 3600  # 1 hour
-    max_ttl                = 86400 # 24 hours
+    // 基本的に手動でキャッシュ削除をするので問題なし
+    default_ttl = 31536000 # 1 Year
+    max_ttl     = 31536000 # 1 Year
 
     forwarded_values {
       query_string = true
@@ -54,8 +55,9 @@ resource "aws_cloudfront_distribution" "distribution" {
     target_origin_id       = "s3-image"
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 3600  # 1 hour
-    max_ttl                = 86400 # 24 hours
+    // 基本的に手動でキャッシュ削除をするので問題なし
+    default_ttl = 31536000 # 1 Year
+    max_ttl     = 31536000 # 1 Year
 
     forwarded_values {
       query_string = false
@@ -99,8 +101,9 @@ resource "aws_cloudfront_distribution" "distribution" {
     target_origin_id       = "s3-hosting"
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 3600  # 1 hour
-    max_ttl                = 86400 # 24 hours
+    // 基本的に手動でキャッシュ削除をするので問題なし
+    default_ttl = 31536000 # 1 Year
+    max_ttl     = 31536000 # 1 Year
 
     forwarded_values {
       query_string = false
