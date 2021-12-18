@@ -72,7 +72,7 @@ resource "aws_lambda_permission" "test_path" {
   source_arn    = "${aws_api_gateway_rest_api.api_gateway_rest_api.execution_arn}/*/GET/${aws_api_gateway_resource.root_path["test"].path_part}"
 }
 resource "aws_lambda_permission" "each_path" {
-  for_each      = toset(["search", "list"])
+  for_each      = toset(["list"])
   statement_id  = "allow-api-gateway-${each.value}-path"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.api.function_name

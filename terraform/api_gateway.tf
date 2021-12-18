@@ -62,7 +62,7 @@ resource "aws_api_gateway_method" "test_get" {
   api_key_required = true
 }
 resource "aws_api_gateway_method" "each_get" {
-  for_each         = toset(["search", "list"])
+  for_each         = toset(["list"])
   rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id      = aws_api_gateway_resource.first_path[each.value].id
   http_method      = "GET"
@@ -105,7 +105,7 @@ resource "aws_api_gateway_integration" "test_get" {
 resource "aws_api_gateway_integration" "each_get" {
   depends_on = [aws_api_gateway_method.each_get]
 
-  for_each                = toset(["search", "list"])
+  for_each                = toset(["list"])
   rest_api_id             = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id             = aws_api_gateway_resource.first_path[each.value].id
   http_method             = "GET"
@@ -166,7 +166,7 @@ resource "aws_api_gateway_method_response" "test_response" {
 resource "aws_api_gateway_method_response" "each_response" {
   depends_on = [aws_api_gateway_method.each_get]
 
-  for_each    = toset(["search", "list"])
+  for_each    = toset(["list"])
   rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id = aws_api_gateway_resource.first_path[each.value].id
   http_method = "GET"
