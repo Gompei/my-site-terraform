@@ -18,17 +18,9 @@ function-build: ## typescriptファイルをjsファイルにコンパイルし�
 	npm --prefix ${PARENT_DIR}/cloud_front_function run build
 	cp -r ${PARENT_DIR}/cloud_front_function/dist ${MAKEFILE_DIR}
 
-.PHONY: init
-init: ## テラフォームの設定ファイルを含む作業ディレクトリを初期化します
-	terraform init -reconfigure -backend-config=.tfbackend
-
-.PHONY: plan
-plan: ## テラフォームによる実行計画を参照します
-	terraform plan -var-file .tfvars
-
 .PHONY: apply
 apply: lambda-build function-build ## tf ファイルに記載された情報を元にリソースを作成します
-	terraform apply -var-file .tfvars -auto-approve
+	terraform apply -auto-approve
 
 front-upload: ## テスト用のhtmlをs3バケットにアップロードします
 	aws s3 cp ${PARENT_DIR}/example_code/s3/index.html s3://${S3_BUCKET_NAME}
@@ -36,7 +28,7 @@ front-upload: ## テスト用のhtmlをs3バケットにアップロードしま
 .PHONY: destroy
 destroy: ## tf ファイルに記載された情報を元にリソースを削除します
 	aws s3 rm s3://${S3_BUCKET_NAME} --recursive
-	terraform destroy -var-file .tfvars -auto-approve
+	terraform destroy -auto-approve
 
 api-test:
 	curl https://${API_DOMAIN}/api/article/list --header 'x-api-key: ${API_KEY}'
