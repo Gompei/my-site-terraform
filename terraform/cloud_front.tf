@@ -14,11 +14,11 @@ resource "aws_cloudfront_function" "function" {
 ########################################################
 resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {}
 resource "aws_cloudfront_distribution" "distribution" {
-  //  lifecycle {
-  //    ignore_changes = [
-  //      origin,
-  //    ]
-  //  }
+  lifecycle {
+    ignore_changes = [
+      origin,
+    ]
+  }
 
   aliases = [data.terraform_remote_state.my-aws-settings.outputs.my_domain_zone.name]
 
