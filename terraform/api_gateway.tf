@@ -90,12 +90,11 @@ resource "aws_api_gateway_method" "article_get" {
   }
 }
 resource "aws_api_gateway_method" "options" {
-  for_each         = toset(local.first_path)
-  rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id      = aws_api_gateway_resource.first_path[each.value].id
-  http_method      = "OPTIONS"
-  authorization    = "NONE"
-  api_key_required = true
+  for_each      = toset(local.first_path)
+  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  resource_id   = aws_api_gateway_resource.first_path[each.value].id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
 }
 
 ########################################################
