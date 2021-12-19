@@ -39,6 +39,7 @@ resource "aws_cloudfront_distribution" "distribution" {
     cached_methods         = ["GET", "HEAD", "OPTIONS"]
     target_origin_id       = "api-gateway"
     viewer_protocol_policy = "redirect-to-https"
+    compress               = true
     min_ttl                = 0
     // 基本的に手動でキャッシュ削除をするので問題なし
     default_ttl = 31536000 # 1 Year
@@ -66,6 +67,7 @@ resource "aws_cloudfront_distribution" "distribution" {
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "s3-image"
     viewer_protocol_policy = "redirect-to-https"
+    compress               = true
     min_ttl                = 0
     // 基本的に手動でキャッシュ削除をするので問題なし
     default_ttl = 31536000 # 1 Year
@@ -109,6 +111,7 @@ resource "aws_cloudfront_distribution" "distribution" {
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "s3-hosting"
     viewer_protocol_policy = "redirect-to-https"
+    compress               = true
     min_ttl                = 0
     // 基本的に手動でキャッシュ削除をするので問題なし
     default_ttl = 31536000 # 1 Year
