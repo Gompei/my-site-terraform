@@ -1,3 +1,6 @@
+########################################################
+# ACM
+########################################################
 resource "aws_acm_certificate" "certificate" {
   provider                  = aws.us-east-1
   domain_name               = data.terraform_remote_state.my-aws-settings.outputs.my_domain_zone.name
@@ -5,6 +8,9 @@ resource "aws_acm_certificate" "certificate" {
   validation_method         = "DNS"
 }
 
+########################################################
+# DNS Validation
+########################################################
 resource "aws_route53_record" "acm_certificate" {
   provider = aws.us-east-1
   for_each = {
@@ -22,7 +28,6 @@ resource "aws_route53_record" "acm_certificate" {
   records         = [each.value.record]
   ttl             = 60
 }
-
 resource "aws_acm_certificate_validation" "certificate" {
   provider                = aws.us-east-1
   certificate_arn         = aws_acm_certificate.certificate.arn

@@ -1,9 +1,24 @@
+########################################################
+# CloudFront Function
+########################################################
+resource "aws_cloudfront_function" "function" {
+  name    = "my-site-cloud-front-function"
+  runtime = "cloudfront-js-1.0"
+  comment = "my-site-cloud-front-function"
+  publish = true
+  code    = file("dist/index.js")
+}
+
+########################################################
+# CloudFront
+########################################################
+resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {}
 resource "aws_cloudfront_distribution" "distribution" {
-  lifecycle {
-    ignore_changes = [
-      origin,
-    ]
-  }
+  //  lifecycle {
+  //    ignore_changes = [
+  //      origin,
+  //    ]
+  //  }
 
   aliases = [data.terraform_remote_state.my-aws-settings.outputs.my_domain_zone.name]
 
@@ -11,7 +26,6 @@ resource "aws_cloudfront_distribution" "distribution" {
   origin {
     domain_name = replace(aws_api_gateway_deployment.deployment.invoke_url, "/^https?://([^/]*).*/", "$1")
     origin_id   = "api-gateway"
-
     custom_origin_config {
       http_port              = 80
       https_port             = 443
@@ -29,7 +43,6 @@ resource "aws_cloudfront_distribution" "distribution" {
     // 基本的に手動でキャッシュ削除をするので問題なし
     default_ttl = 31536000 # 1 Year
     max_ttl     = 31536000 # 1 Year
-
     forwarded_values {
       query_string = true
       headers      = ["x-api-key"]
@@ -43,7 +56,6 @@ resource "aws_cloudfront_distribution" "distribution" {
   origin {
     domain_name = aws_s3_bucket.s3_bucket_image.bucket_regional_domain_name
     origin_id   = "s3-image"
-
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
     }
@@ -58,7 +70,6 @@ resource "aws_cloudfront_distribution" "distribution" {
     // 基本的に手動でキャッシュ削除をするので問題なし
     default_ttl = 31536000 # 1 Year
     max_ttl     = 31536000 # 1 Year
-
     forwarded_values {
       query_string = false
       cookies {
@@ -69,9 +80,8 @@ resource "aws_cloudfront_distribution" "distribution" {
 
   // 静的ホスティング用
   origin {
-    domain_name = aws_s3_bucket.s3_bucket.bucket_regional_domain_name
+    domain_name = aws_s3_bucket.s3_bucket_hosting.bucket_regional_domain_name
     origin_id   = "s3-hosting"
-
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
     }
@@ -82,7 +92,6 @@ resource "aws_cloudfront_distribution" "distribution" {
     response_code      = 403
     response_page_path = "/index.html"
   }
-
   custom_error_response {
     error_code         = 404
     response_code      = 404
@@ -104,14 +113,12 @@ resource "aws_cloudfront_distribution" "distribution" {
     // 基本的に手動でキャッシュ削除をするので問題なし
     default_ttl = 31536000 # 1 Year
     max_ttl     = 31536000 # 1 Year
-
     forwarded_values {
       query_string = false
       cookies {
         forward = "none"
       }
     }
-
     function_association {
       event_type   = "viewer-request"
       function_arn = aws_cloudfront_function.function.arn
@@ -130,14 +137,4 @@ resource "aws_cloudfront_distribution" "distribution" {
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
-}
-
-resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {}
-
-resource "aws_cloudfront_function" "function" {
-  name    = "my-site-cloud-front-function"
-  runtime = "cloudfront-js-1.0"
-  comment = "my-site-cloud-front-function"
-  publish = true
-  code    = file("dist/index.js")
 }

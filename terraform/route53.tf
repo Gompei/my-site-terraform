@@ -1,3 +1,6 @@
+########################################################
+# Route53 Record Set
+########################################################
 resource "aws_route53_record" "cloudfront_alias" {
   zone_id = data.terraform_remote_state.my-aws-settings.outputs.my_domain_zone.zone_id
   name    = data.terraform_remote_state.my-aws-settings.outputs.my_domain_zone.name

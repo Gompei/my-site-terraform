@@ -1,14 +1,23 @@
-// API Gateway作成
+########################################################
+# API Gateway
+########################################################
 resource "aws_api_gateway_rest_api" "api_gateway_rest_api" {
   name        = "my-site-api-gateway-rest"
   description = "my-site-api-gateway-rest"
 }
 
-// Cloud Watch設定
+########################################################
+# Cloud Watch
+########################################################
 resource "aws_api_gateway_account" "account" {
   cloudwatch_role_arn = aws_iam_role.api_gateway.arn
 }
-data "aws_iam_policy_document" "api_gateway" {
+resource "aws_iam_role" "api_gateway" {
+  name                = "my-site-api-gateway-role"
+  assume_role_policy  = data.aws_iam_policy_document.assume_role.json
+  managed_policy_arns = ["arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"]
+}
+data "aws_iam_policy_document" "assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
 
@@ -19,16 +28,30 @@ data "aws_iam_policy_document" "api_gateway" {
     effect = "Allow"
   }
 }
-resource "aws_iam_role" "api_gateway" {
-  name               = "my-site-api-gateway-role"
-  assume_role_policy = data.aws_iam_policy_document.api_gateway.json
+
+########################################################
+# API Gateway Error Response
+########################################################
+resource "aws_api_gateway_gateway_response" "default_4xx_response" {
+  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  response_type = "DEFAULT_4XX"
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'OPTIONS'"
+  }
 }
-resource "aws_iam_role_policy_attachment" "api_gateway" {
-  role       = aws_iam_role.api_gateway.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+resource "aws_api_gateway_gateway_response" "default_5xx_response" {
+  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  response_type = "DEFAULT_5XX"
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'OPTIONS'"
+  }
 }
 
-// リソース作成(APIパス)
+########################################################
+# API Gateway Resource Path
+########################################################
 locals {
   root_path  = ["article"]
   first_path = ["{articleID}", "list"]
@@ -46,11 +69,12 @@ resource "aws_api_gateway_resource" "first_path" {
   path_part   = each.value
 }
 
-// メソッド作成
-resource "aws_api_gateway_method" "each_get" {
-  for_each         = toset(["list"])
+########################################################
+# API Gateway Method
+########################################################
+resource "aws_api_gateway_method" "list_get" {
   rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id      = aws_api_gateway_resource.first_path[each.value].id
+  resource_id      = aws_api_gateway_resource.first_path["list"].id
   http_method      = "GET"
   authorization    = "NONE"
   api_key_required = true
@@ -61,33 +85,36 @@ resource "aws_api_gateway_method" "article_get" {
   http_method      = "GET"
   authorization    = "NONE"
   api_key_required = true
-
   request_parameters = {
     "method.request.path.articleID" = true
   }
 }
+resource "aws_api_gateway_method" "options" {
+  for_each         = toset(local.first_path)
+  rest_api_id      = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  resource_id      = aws_api_gateway_resource.first_path[each.value].id
+  http_method      = "OPTIONS"
+  authorization    = "NONE"
+  api_key_required = true
+}
 
-// 統合タイプ設定
-resource "aws_api_gateway_integration" "each_get" {
-  depends_on = [aws_api_gateway_method.each_get]
-
-  for_each                = toset(["list"])
+########################################################
+# API Gateway Integration
+########################################################
+resource "aws_api_gateway_integration" "list_get" {
+  depends_on              = [aws_api_gateway_method.list_get]
   rest_api_id             = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id             = aws_api_gateway_resource.first_path[each.value].id
+  resource_id             = aws_api_gateway_resource.first_path["list"].id
   http_method             = "GET"
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.api.invoke_arn
 }
-resource "aws_api_gateway_integration" "article_any" {
-  depends_on = [
-    aws_api_gateway_method.article_get
-  ]
-
-  for_each                = toset(["GET"])
+resource "aws_api_gateway_integration" "article_get" {
+  depends_on              = [aws_api_gateway_method.article_get]
   rest_api_id             = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id             = aws_api_gateway_resource.first_path["{articleID}"].id
-  http_method             = each.value
+  http_method             = "GET"
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.api.invoke_arn
@@ -95,14 +122,28 @@ resource "aws_api_gateway_integration" "article_any" {
     "integration.request.path.id" = "method.request.path.articleID"
   }
 }
-
-// レスポンス設定
-resource "aws_api_gateway_method_response" "each_response" {
-  depends_on = [aws_api_gateway_method.each_get]
-
-  for_each    = toset(["list"])
+resource "aws_api_gateway_integration" "options" {
+  for_each    = toset(local.first_path)
   rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id = aws_api_gateway_resource.first_path[each.value].id
+  http_method = aws_api_gateway_method.options[each.value].http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = <<EOF
+{
+  "statusCode": 200
+}
+EOF
+  }
+}
+
+########################################################
+# API Gateway Method Response
+########################################################
+resource "aws_api_gateway_method_response" "list_get" {
+  depends_on  = [aws_api_gateway_method.list_get]
+  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  resource_id = aws_api_gateway_resource.first_path["list"].id
   http_method = "GET"
   status_code = "200"
   response_models = {
@@ -114,15 +155,26 @@ resource "aws_api_gateway_method_response" "each_response" {
     "method.response.header.Access-Control-Allow-Origin"  = true
   }
 }
-resource "aws_api_gateway_method_response" "article_any_response" {
-  depends_on = [
-    aws_api_gateway_method.article_get
-  ]
-
-  for_each    = toset(["GET"])
+resource "aws_api_gateway_method_response" "article_get" {
+  depends_on  = [aws_api_gateway_method.article_get]
   rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id = aws_api_gateway_resource.first_path["{articleID}"].id
-  http_method = each.value
+  http_method = "GET"
+  status_code = "200"
+  response_models = {
+    "application/json" = "Empty"
+  }
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+resource "aws_api_gateway_method_response" "options" {
+  for_each    = toset(local.first_path)
+  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
+  resource_id = aws_api_gateway_resource.first_path[each.value].id
+  http_method = aws_api_gateway_method.options[each.value].http_method
   status_code = "200"
   response_models = {
     "application/json" = "Empty"
@@ -134,73 +186,44 @@ resource "aws_api_gateway_method_response" "article_any_response" {
   }
 }
 
-// CORS設定
-resource "aws_api_gateway_method" "options_first_path" {
-  for_each      = toset(local.first_path)
-  rest_api_id   = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id   = aws_api_gateway_resource.first_path[each.value].id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
-}
-resource "aws_api_gateway_method_response" "options_first_path" {
+########################################################
+# API Gateway Integration Response
+########################################################
+resource "aws_api_gateway_integration_response" "options" {
   for_each    = toset(local.first_path)
   rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
   resource_id = aws_api_gateway_resource.first_path[each.value].id
-  http_method = aws_api_gateway_method.options_first_path[each.value].http_method
-  status_code = "200"
-  response_models = {
-    "application/json" = "Empty"
-  }
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true,
-    "method.response.header.Access-Control-Allow-Methods" = true,
-    "method.response.header.Access-Control-Allow-Origin"  = true
-  }
-}
-resource "aws_api_gateway_integration_response" "options_first_path" {
-  for_each    = toset(local.first_path)
-  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id = aws_api_gateway_resource.first_path[each.value].id
-  http_method = aws_api_gateway_method.options_first_path[each.value].http_method
-  status_code = aws_api_gateway_method_response.options_first_path[each.value].status_code
-
+  http_method = aws_api_gateway_method.options[each.value].http_method
+  status_code = aws_api_gateway_method_response.options[each.value].status_code
   response_parameters = {
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
     "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'",
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
   }
 }
-resource "aws_api_gateway_integration" "options_mock_first_path" {
-  for_each    = toset(local.first_path)
-  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
-  resource_id = aws_api_gateway_resource.first_path[each.value].id
-  http_method = aws_api_gateway_method.options_first_path[each.value].http_method
-  type        = "MOCK"
 
-  request_templates = {
-    "application/json" = <<EOF
-{
-  "statusCode": 200
-}
-EOF
-  }
-}
-
-// デプロイ
+########################################################
+# Deploy API Gateway
+########################################################
 resource "aws_api_gateway_deployment" "deployment" {
-  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
   depends_on = [
-    aws_api_gateway_integration.each_get,
-    aws_api_gateway_integration.article_any,
+    aws_api_gateway_integration.list_get,
+    aws_api_gateway_integration.article_get,
+    aws_api_gateway_integration.options
   ]
+
+  rest_api_id = aws_api_gateway_rest_api.api_gateway_rest_api.id
   // 常にデプロイ
   stage_description = "timestamp = ${timestamp()}"
   stage_name        = "api"
-
   lifecycle {
     create_before_destroy = true
   }
 }
+
+########################################################
+# API Gateway Method Settings
+########################################################
 resource "aws_api_gateway_method_settings" "method_settings" {
   depends_on = [aws_api_gateway_account.account]
 
@@ -213,7 +236,9 @@ resource "aws_api_gateway_method_settings" "method_settings" {
   }
 }
 
-// API設定
+########################################################
+# API Key Settings
+########################################################
 resource "aws_api_gateway_api_key" "api_key" {
   name    = "my-site-api-key"
   enabled = true
